@@ -3,10 +3,70 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 from utils import get_random_int
 
+# OpenTelemetry imports
+from opentelemetry import metrics, trace
+from opentelemetry.exporter.otlp.proto.grpc._log_exporter import (
+    OTLPLogExporter,
+)
+from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import (
+    OTLPMetricExporter,
+)
+from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import (
+    OTLPSpanExporter,
+)
+# Support for logs is currently experimental
+from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
+from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
+from opentelemetry.sdk.metrics import MeterProvider
+from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
+from opentelemetry.sdk.resources import Resource
+from opentelemetry.sdk.resources import SERVICE_INSTANCE_ID
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.instrumentation.flask import FlaskInstrumentor
+import logging
+
+# Set up the resource with metadata
+resource = Resource.create(
+    attributes={
+        "service.name": "flights",
+        "service.instance.id": "flights-1",
+        "deployment.environment": "production",
+    }
+)
+
+# OpenTelemetry Tracing Configuration
+collector_endpoint = "http://host.docker.internal:4318"
+tracer_provider = TracerProvider(resource=resource)
+tracer_provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter(endpoint=collector_endpoint)))
+trace.set_tracer_provider(tracer_provider)
+
+# OpenTelemetry Metrics Configuration
+metrics.set_meter_provider(
+    MeterProvider(
+        resource=resource,
+        metric_readers=[
+            PeriodicExportingMetricReader(
+                OTLPMetricExporter(endpoint=collector_endpoint)
+            )
+        ],
+    )
+)
+
+# OpenTelemetry Logging Configuration
+logger_provider = LoggerProvider(resource=resource)
+logger_provider.add_log_record_processor(
+    BatchLogRecordProcessor(OTLPLogExporter(endpoint=collector_endpoint))
+)
+logging.getLogger().addHandler(LoggingHandler(level=logging.NOTSET, logger_provider=logger_provider))
+
+# Flask application setup
 app = Flask(__name__)
+FlaskInstrumentor().instrument_app(app)
 Swagger(app)
 CORS(app)
 
+# Flask routes
 @app.route('/health', methods=['GET'])
 def health():
     """Health endpoint
@@ -48,7 +108,7 @@ def get_flights(airline):
     """
     status_code = request.args.get("raise")
     if status_code:
-      raise Exception(f"Encountered {status_code} error") # pylint: disable=broad-exception-raised
+        raise Exception(f"Encountered {status_code} error")  # pylint: disable=broad-exception-raised
     random_int = get_random_int(100, 999)
     return jsonify({airline: [random_int]}), 200
 
@@ -78,7 +138,7 @@ def book_flight():
     """
     status_code = request.args.get("raise")
     if status_code:
-      raise Exception(f"Encountered {status_code} error") # pylint: disable=broad-exception-raised
+        raise Exception(f"Encountered {status_code} error")  # pylint: disable=broad-exception-raised
     passenger_name = request.args.get("passenger_name")
     flight_num = request.args.get("flight_num")
     booking_id = get_random_int(100, 999)
