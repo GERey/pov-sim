@@ -25,6 +25,9 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.instrumentation.flask import FlaskInstrumentor
 import logging
+import pyroscope
+
+
 
 # Set up the resource with metadata
 resource = Resource.create(
@@ -59,6 +62,21 @@ logger_provider.add_log_record_processor(
     BatchLogRecordProcessor(OTLPLogExporter(endpoint=collector_endpoint))
 )
 logging.getLogger().addHandler(LoggingHandler(level=logging.NOTSET, logger_provider=logger_provider))
+
+pyroscope.configure(
+    server_address = "https://profiles-prod-008.grafana.net",
+    basic_auth_username = '1119981',
+    basic_auth_password = 'xxx',
+    application_name    = "flights", # replace this with some name for your application
+    sample_rate         = 100, # default is 100
+    detect_subprocesses = False, # detect subprocesses started by the main process; default is False
+    oncpu               = True, # report cpu time only; default is True
+    gil_only            = True, # only include traces for threads that are holding on to the Global Interpreter Lock; default is True
+    enable_logging      = True, # does enable logging facility; default is False
+    tags                = {
+        "region": '{os.getenv("REGION")}',
+    }
+)
 
 # Flask application setup
 app = Flask(__name__)

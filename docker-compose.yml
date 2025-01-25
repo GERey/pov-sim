@@ -8,7 +8,11 @@ services:
       - OTEL_SERVICE_NAME=airlines
       - OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
       - OTEL_RESOURCE_ATTRIBUTES=deployment.environment=production
-      - OTEL_LOG_LEVEL=DEBUG
+      - PYROSCOPE_APPLICATION_NAME=airlines
+      - PYROSCOPE_SERVER_ADDRESS=https://profiles-prod-008.grafana.net
+      - PYROSCOPE_BASIC_AUTH_USER=1119981
+      - PYROSCOPE_BASIC_AUTH_PASSWORD=xxx
+      # - OTEL_LOG_LEVEL=DEBUG
 
       # - OTEL_JAVAAGENT_DEBUG=true
     ports:
@@ -19,13 +23,17 @@ services:
     environment:
       - OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED=true
       - OTEL_LOGS_EXPORTER=otlp
-      - OTEL_TRACES_EXPORTER=otlp
-      - OTEL_METRICS_EXPORTER=otlp
-      - OTEL_LOG_LEVEL=DEBUG
+      # - OTEL_TRACES_EXPORTER=otlp
+      # - OTEL_METRICS_EXPORTER=otlp
+      # - OTEL_LOG_LEVEL=DEBUG
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://host.docker.internal:4318
       - OTEL_SERVICE_NAME=flights
       - OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
       - OTEL_RESOURCE_ATTRIBUTES=deployment.environment=production
+      - PYROSCOPE_APPLICATION_NAME=flights
+      - PYROSCOPE_SERVER_ADDRESS=https://profiles-prod-008.grafana.net
+      - PYROSCOPE_BASIC_AUTH_USER=1119981
+      - PYROSCOPE_BASIC_AUTH_PASSWORD=xxx
 
     ports:
       - "5001:5001"

@@ -27,6 +27,10 @@ WORKDIR /app
 # Copy the JAR file from the build stage
 COPY --from=build /app/build/libs/*.jar app.jar
 
+# Add the Pyroscope agent
+ADD https://github.com/pyroscope-io/pyroscope-java/releases/latest/download/pyroscope.jar /app/pyroscope.jar
+
+
 ADD https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/download/v2.12.0/opentelemetry-javaagent.jar /app/grafana-opentelemetry-java.jar
 
 
@@ -35,6 +39,6 @@ ADD https://github.com/open-telemetry/opentelemetry-java-instrumentation/release
 EXPOSE 8080
 
 # Set the command to run the application
-ENTRYPOINT ["java", "-javaagent:/app/grafana-opentelemetry-java.jar", "-jar", "app.jar"]
+ENTRYPOINT ["java","-javaagent:/app/pyroscope.jar" ,"-javaagent:/app/grafana-opentelemetry-java.jar", "-jar", "app.jar"]
 
 
